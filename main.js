@@ -8,16 +8,17 @@ const serverUrl = process.env.SERVERURL;
 const appId = process.env.APPID;
 Moralis.start({serverUrl, appId, master_key});
 
+// prototype
 function Wallet() {
   this.chart = {dates: new Set(), values: []};
 }
-
+// prototype
 function Dates(date, wallet) {
   this.keyLength = 0;
   wallet[`${date}`] = this;
   wallet.chart.dates.add(date);
 }
-
+// prototype
 function Asset(b, address, name, date, balance, price, wallet) {
   this.address = address;
   this.name = name;
@@ -26,7 +27,7 @@ function Asset(b, address, name, date, balance, price, wallet) {
   wallet[`${date}`][b] = this;
   wallet[`${date}`].keyLength += 1;
 }
-
+// prototype
 function WhiteList() {}
 // sets up global whitelist
 const whitelist = new WhiteList();
@@ -72,6 +73,8 @@ const queryDB = async (balances, chain) => {
   }
 };
 
+// get blocks stored on DB
+// @param start date and chain (YYYY-MM-DD)
 const getBlocksFromDB = async function (startDate, chain) {
   const blocksInDB = await Moralis.Object.extend('BlocksOfEachChain');
   const queryStartDate = new Moralis.Query(blocksInDB);
@@ -122,6 +125,7 @@ async function getTokenBalances(chain, address, block) {
   return WhitelistedTokensInAddy;
 }
 
+// init the entire query process
 async function run(address, startDate, endDate, chain) {
   address = address.toLowerCase();
   let wallet = new Wallet();
