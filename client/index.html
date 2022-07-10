@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mars check</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Check out the performance of your EVM wallet addresses."
+    />
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="style.css" />
+    <script
+      src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+      type="application/javascript"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@3.8.0/dist/chart.min.js"
+      defer
+    ></script>
+    <script src="script.js" defer></script>
+  </head>
+
+  <body>
+    <h1>
+      <div id="heading">Portfolio Performance</div>
+    </h1>
+    <div>
+      <input type="text" id="addy_input" placeholder="Enter EVM address" />
+      <div class="dropdown-menu link" addy-dropdown-button>
+        <button class="link" addy-dropdown-button></button>
+      </div>
+    </div>
+    <br />
+    <h3>Development in progress</h3>
+    <div white-space: pre-line;>
+      All EVM addresses are public. Currently this only works on fantom chain
+    </div>
+    <div>0xfbF535224f1f473b6438bf50Fbf3200b8659eDDE</div>
+    <div>0x78f82c16992932EfDd18d93f889141CcF326DBc2</div>
+    <div>Chart might take a few minutes to appear</div>
+    <br />
+    <div class="chart-container">
+      <canvas id="placeholder-chart"></canvas>
+    </div>
+  </body>
+</html>

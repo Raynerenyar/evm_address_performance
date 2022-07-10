@@ -1,0 +1,95 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+h1 {
+  padding: 2rem;
+  text-align: center;
+  padding-bottom: 0rem;
+}
+
+h3 {
+  text-align: center;
+}
+
+#heading {
+  font-size: 1.5rem;
+}
+
+#addy_input {
+  font-size: 1rem;
+  width: 25rem;
+  padding-bottom: 0;
+  border-bottom: 0px;
+  margin-bottom: 0;
+  font-family: inherit;
+  letter-spacing: normal;
+}
+#addy_input:focus {
+  outline: none;
+}
+
+#goIntoAddy {
+  text-align: center;
+}
+
+.dropdown-menu {
+  font-size: 1rem;
+  background-color: rgb(243, 243, 243);
+  width: 25rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0;
+  padding-top: 0;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.2);
+  text-align: left;
+  transition: opacity 400ms ease-in-out;
+  letter-spacing: normal;
+  opacity: 0;
+}
+
+.link {
+  /* font-size: 1rem; */
+  border: 0;
+  width: 25rem;
+  padding-bottom: 0;
+  border-bottom: 0px;
+  margin-bottom: 0;
+  text-align: left;
+  font-family: inherit;
+  letter-spacing: normal;
+  opacity: 0;
+}
+
+.dropdown-menu.active {
+  opacity: 1;
+}
+
+.link.active {
+  opacity: 1;
+  cursor: pointer;
+  letter-spacing: normal;
+}
+
+div,
+canvas {
+  /* padding-top: 0rem; */
+  text-align: center;
+  align-content: center;
+}
+
+canvas {
+  border: 1px dotted red;
+  border-color: blue;
+  border-width: thick;
+  border-style: solid;
+}
+
+.chart-container {
+  position: relative;
+  margin: auto;
+  height: 100vh;
+  width: 80vw;
+}
