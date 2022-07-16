@@ -1,11 +1,17 @@
 'use strict';
-const getCoinGeckoPrice = require('./getCoinGeckoPrice.js');
-const Moralis = require('moralis/node');
-require('dotenv').config();
 const {addDays, endOfYesterday, format} = require('date-fns');
+const {
+  getPriceData,
+  reverseDayandYear,
+  webScrapPrices,
+} = require('./getPrice.js');
+require('dotenv').config();
+const Moralis = require('moralis/node');
+const EventEmitter = require('events');
 const master_key = process.env.MASTER_KEY;
 const serverUrl = process.env.SERVERURL;
 const appId = process.env.APPID;
+// init Moralis server
 Moralis.start({serverUrl, appId, master_key});
 
 // prototype
@@ -30,28 +36,31 @@ function Asset(b, address, name, date, balance, price, wallet) {
 // prototype
 function WhiteList() {}
 // sets up global whitelist
-const whitelist = new WhiteList();
+const globalWhitelist = new WhiteList();
+// TODO: undefineds to be amended for LP/autocompounder tokens
 const theUndefineds = new Set();
+let WLaddressSet;
 
 WhiteList.prototype.updateWhitelist = function (chain, tokenId, tokenAddy) {
-  chain === 'eth' ? 'ethereum' : 'ethereum';
-  chain === 'bsc' ? 'binance_smart_chain' : 'binance_smart_chain';
-  if (!Object.keys(this).includes(chain)) {
-    this[chain] = {name: new Set(), address: new Set()};
+  if (chain === 'eth') chain = 'ethereum';
+  if (chain === 'bsc') chain = 'binance_smart_chain';
+  // chain === 'bsc' ? 'binance_smart_chain' : 'binance_smart_chain';
+  const chainSet = new Set(Object.keys(this));
+  if (!chainSet.has(chain)) {
+    this[chain] = {addyLength: 0};
   }
-  if (!this[chain].address.has(tokenId)) {
-    this[chain].name.add(tokenId);
-    this[chain].address.add(tokenAddy);
+  WLaddressSet = new Set(Object.keys(this[chain]));
+  if (!WLaddressSet.has(tokenAddy)) {
+    this[chain][tokenAddy] = tokenId;
+    // reassign WLaddressSet
+    WLaddressSet = new Set(Object.keys(this[chain]));
+    this[chain].addyLength += 1;
   }
 };
 
-WhiteList.prototype.getAddressArray = function (chain) {
-  return Array.from(this[chain].address);
-};
-
-WhiteList.prototype.getNameArray = function (chain) {
-  return Array.from(this[chain].name);
-};
+// init global priceList prototype
+function globalPriceList() {}
+let globalPriceListTokenIdSet;
 
 // create whitelist base on tokens in wallet and coingecko Id
 // if there's price on coingecko it is whitelisted
@@ -64,7 +73,7 @@ const queryDB = async (balances, chain) => {
     query.equalTo('contract_address', balances[i].token_address);
     const results = await query.first();
     if (results != undefined) {
-      whitelist.updateWhitelist(
+      globalWhitelist.updateWhitelist(
         chain,
         results.get('coinGecko_id'),
         results.get('contract_address')
@@ -112,56 +121,56 @@ async function getTokenBalances(chain, address, block) {
   };
   const balances = await Moralis.Web3API.account.getTokenBalances(options);
   await queryDB(balances, chain);
-  const WhitelistedTokensInAddy = {address: [], balance: []};
+  const WLTokensInAddy = {};
   const balancesLength = balances.length;
   for (let i = 0; i < balancesLength; i++) {
-    if (whitelist[chain].address.has(balances[i].token_address)) {
-      WhitelistedTokensInAddy.address.push(balances[i].token_address);
-      WhitelistedTokensInAddy.balance.push(
-        balances[i].balance / 10 ** balances[i].decimals
-      );
+    if (WLaddressSet.has(balances[i].token_address)) {
+      WLTokensInAddy[balances[i].token_address] =
+        balances[i].balance / 10 ** balances[i].decimals;
     }
   }
-  return WhitelistedTokensInAddy;
+  return WLTokensInAddy;
 }
 
 // init the entire query process
-async function run(address, startDate, endDate, chain) {
+async function run(address, startDate, endDate, chain, daysToLookBack) {
   address = address.toLowerCase();
   let wallet = new Wallet();
   const dateSet = getDaysArray(new Date(startDate), new Date(endDate));
   const dateArray = Array.from(dateSet).reverse();
   const dateArrayLength = dateArray.length;
+  // prefill array, creates equal num of elements in array as there are dates
   wallet.chart.values = new Array(dateArrayLength).fill(0);
+  const blockArray = await getBlocksFromDB(startDate, chain);
+  const block = Array.from(blockArray);
+  globalPriceListTokenIdSet = new Set(Object.keys(globalPriceList));
+  // for each date, get token balances and price of each address in wallet
   for (let a = 0; a < dateArrayLength; ++a) {
     new Dates(dateArray[a], wallet);
-    const blockArray = await getBlocksFromDB(startDate, chain);
-    // block = await getBlocks(dateArray[a], chain);
-    const block = Array.from(blockArray);
-    const WhitelistedTokensInAddy = await getTokenBalances(
-      chain,
-      address,
-      block[a]
-    );
-    const WL_TokensInAddy_Length = WhitelistedTokensInAddy.address.length;
-    // for each date, get token balances and price of each address in wallet
-    // add to wallet Object
-    for (let b = 0; b < WL_TokensInAddy_Length; ++b) {
-      const index = whitelist
-        .getAddressArray(chain)
-        .findIndex((addy) => addy === WhitelistedTokensInAddy.address[b]);
-      const convertedDate = getCoinGeckoPrice.convertTime(dateArray[a]);
-      // const convertedDate = format(dateArray[a], 'dd-MM-yyyy');
-      const price = await getCoinGeckoPrice.getPriceData(
-        whitelist.getNameArray(chain)[index],
-        convertedDate
-      );
+    const WLTokensInAddy = await getTokenBalances(chain, address, block[a]);
+    const tokenLength = Object.keys(WLTokensInAddy).length;
+    const addressArr = Object.keys(WLTokensInAddy);
+    for (let b = 0; b < tokenLength; ++b) {
+      const currentTokenName = globalWhitelist[chain][addressArr[b]];
+      let tokenPricesFromWebpage;
+      // skips webscrapping if prices are already in globalPriceList
+      if (!globalPriceListTokenIdSet.has(currentTokenName)) {
+        tokenPricesFromWebpage = await webScrapPrices(
+          currentTokenName,
+          startDate,
+          endDate,
+          daysToLookBack
+        );
+        globalPriceList[currentTokenName] = tokenPricesFromWebpage;
+        globalPriceListTokenIdSet = new Set(Object.keys(globalPriceList));
+      }
+      const price = globalPriceList[currentTokenName][dateArray[a]];
       const newAsset = new Asset(
         b,
-        WhitelistedTokensInAddy.address[b],
-        whitelist.getNameArray(chain)[index],
+        addressArr[b],
+        currentTokenName,
         dateArray[a],
-        WhitelistedTokensInAddy.balance[b],
+        WLTokensInAddy[addressArr[b]],
         price,
         wallet
       );
@@ -175,12 +184,24 @@ async function run(address, startDate, endDate, chain) {
 
 // let walletAddress = '0xfbF535224f1f473b6438bf50Fbf3200b8659eDDE';
 const startRunning = async (walletAddress) => {
+  // console.time('server side retrieve data');
+  // TODO: get userEndDateObj from front end (should be date from day before)
+  const userEndDate = '2022-06-10';
+  // const userEndDateObj = new Date('2022-06-10');
+  // userEndDate to be yesterday's date
+  // const yesterday = endOfYesterday();
+  // TODO: add user's days back to get data
+  const daysToLookBack = 10;
+  const dateNumDaysAgo = addDays(new Date('2022-06-10'), -(daysToLookBack - 1));
+  const userStartDate = format(dateNumDaysAgo, 'yyyy-MM-dd');
   let walletArray = await run(
     walletAddress,
-    '2022-06-01', // start date
-    '2022-06-10', // end date
-    'fantom'
+    userStartDate, // start date
+    userEndDate, // end date
+    'fantom', //TODO: add array of chains
+    daysToLookBack
   );
+  // console.timeEnd('server side retrieve data');
   return walletArray;
 };
 

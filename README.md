@@ -13,5 +13,8 @@ Development in progress of a chart to view monetary performance of any Ethereum 
    - Similar to LP tokens, Autocompounders adds a few extra layers of complexity to calculate its price
 5. Beautiful front-end page
 6. To include list of daily tokens (with logos), prices, balances
+7. to trade space for time - increase space complexity for lower time complexity
+8. create script to store daily blocks into DB
+9. queue for received frontend address
 
-![Example of chart for 0x4fe6f19031239f105f753d1df8a0d24857d0caa2](/img/0x4fe6f19031239f105f753d1df8a0d24857d0caa2.png)
+![Example of chart for 0x4fe6f19031239f105f753d1df8a0d24857d0caa2](img/0x4fe6f19031239f105f753d1df8a0d24857d0caa2.png)

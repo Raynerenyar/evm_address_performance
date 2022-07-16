@@ -47,19 +47,14 @@ document.addEventListener('click', (c) => {
 
 const roundValue = (values) => {
   const maxValue = Math.max(...values);
-  const bufferMax = Math.round(maxValue + maxValue / 4);
-  const denomMax = 10 ** (bufferMax.toString().length - 1);
-  let maxY =
-    Math.round(bufferMax / denomMax) === 0
-      ? denomMax
-      : Math.round(bufferMax / denomMax) * denomMax;
   const minValue = Math.min(...values);
-  const bufferMin = Math.round(minValue - (maxY - maxValue));
-  const denomMin = 10 ** (bufferMin.toString().length - 1);
-  let minY =
-    Math.round(bufferMin / denomMin) === 0
-      ? denomMin
-      : Math.round(bufferMin / denomMin) * denomMin;
+  const difference = maxValue - minValue;
+  const padding = difference * 0.05;
+  const minY = Math.floor(minValue / padding - 1) * padding;
+  const maxY = Math.ceil(maxValue / padding + 1) * padding;
+  const small = minY / 10 ** (Math.trunc(minY).toString().length - 1);
+  const roundedMinY = Math.round(small * 10) / 10;
+  console.log(roundedMinY * 10 ** Math.trunc(minY).toString().length);
   return {maxY, minY};
 };
 const ctxx = document.getElementById('placeholder-chart');
@@ -93,62 +88,124 @@ const requestData = async (address) => {
   document.getElementById('placeholder-chart').id = 'myChart';
   placeholder.destroy();
   const ctx = document.getElementById('myChart');
+  const lineData = {
+    labels: xLabels,
+    datasets: [
+      {
+        // label: 'test',
+        data: yLabels,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.2)',
+          // 'rgba(54, 162, 235, 0.2)',
+          // 'rgba(255, 206, 86, 0.2)',
+          // 'rgba(75, 192, 192, 0.2)',
+          // 'rgba(153, 102, 255, 0.2)',
+          // 'rgba(255, 159, 64, 0.2)',
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          // 'rgba(54, 162, 235, 1)',
+          // 'rgba(255, 206, 86, 1)',
+          // 'rgba(75, 192, 192, 1)',
+          // 'rgba(153, 102, 255, 1)',
+          // 'rgba(255, 159, 64, 1)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+  const lineOptions = {
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: maxY,
+        min: minY,
+        grid: {
+          drawBorder: true,
+        },
+      },
+    },
+    plugins: {
+      title: {
+        display: true,
+        align: 'top',
+        text: `${checkedAddy} $${Math.round(Math.max(...yLabels))}`,
+        font: {
+          size: 16,
+        },
+      },
+      legend: {
+        display: false,
+      },
+    },
+    animation: {
+      duration: 5000,
+      loop: false,
+    },
+  };
+
   const myChart = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels: xLabels,
-      datasets: [
-        {
-          data: yLabels,
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.2)',
-            'rgba(54, 162, 235, 0.2)',
-            'rgba(255, 206, 86, 0.2)',
-            'rgba(75, 192, 192, 0.2)',
-            'rgba(153, 102, 255, 0.2)',
-            'rgba(255, 159, 64, 0.2)',
-          ],
-          borderColor: [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)',
-          ],
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: maxY,
-          min: minY,
-          grid: {
-            drawBorder: true,
-          },
-        },
-      },
-      plugins: {
-        title: {
-          display: true,
-          align: 'top',
-          text: `$${Math.round(Math.max(...yLabels))}`,
-          font: {
-            size: 16,
-          },
-        },
-        legend: {
-          display: false,
-        },
-      },
-      animation: {
-        duration: 5000,
-        loop: false,
-      },
-    },
+    data: lineData,
+    options: lineOptions,
   });
+  // const myChart = new Chart(ctx, {
+  //   type: 'line',
+  //   data: {
+  //     labels: xLabels,
+  //     datasets: [
+  //       {
+  //         label: 'test',
+  //         data: yLabels,
+  //         backgroundColor: [
+  //           'rgba(255, 99, 132, 0.2)',
+  //           'rgba(54, 162, 235, 0.2)',
+  //           'rgba(255, 206, 86, 0.2)',
+  //           'rgba(75, 192, 192, 0.2)',
+  //           'rgba(153, 102, 255, 0.2)',
+  //           'rgba(255, 159, 64, 0.2)',
+  //         ],
+  //         borderColor: [
+  //           'rgba(255, 99, 132, 1)',
+  //           'rgba(54, 162, 235, 1)',
+  //           'rgba(255, 206, 86, 1)',
+  //           'rgba(75, 192, 192, 1)',
+  //           'rgba(153, 102, 255, 1)',
+  //           'rgba(255, 159, 64, 1)',
+  //         ],
+  //         borderWidth: 1,
+  //       },
+  //     ],
+  //   },
+  //   options: {
+  //     scales: {
+  //       y: {
+  //         beginAtZero: true,
+  //         max: maxY,
+  //         min: minY,
+  //         grid: {
+  //           drawBorder: true,
+  //         },
+  //       },
+  //     },
+  //     plugins: {
+  //       title: {
+  //         display: true,
+  //         align: 'top',
+  //         text: `$${Math.round(Math.max(...yLabels))}`,
+  //         font: {
+  //           size: 16,
+  //         },
+  //       },
+  //       legend: {
+  //         display: false,
+  //       },
+  //     },
+  //     animation: {
+  //       duration: 5000,
+  //       loop: false,
+  //     },
+  //   },
+  // });
   console.timeEnd('requesting data');
 };
